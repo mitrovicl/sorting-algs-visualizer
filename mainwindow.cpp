@@ -46,6 +46,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     stopButton = new QPushButton;
     stopButton->setText(tr("Stop"));
+    stopButton->setDisabled(true);
 
     timeLCD = new QLCDNumber;
     QPalette palette = timeLCD->palette();
@@ -118,12 +119,14 @@ void MainWindow::stop() {
 
 void MainWindow::disableButtons() {
     startButton->setDisabled(true);
+    stopButton->setDisabled(false);
     randomizeButton->setDisabled(true);
     chooseRectsNumberCombo->setDisabled(true);
 }
 
 void MainWindow::enableButtons() {
     startButton->setDisabled(false);
+    stopButton->setDisabled(true);
     randomizeButton->setDisabled(false);
     chooseRectsNumberCombo->setDisabled(false);
 }

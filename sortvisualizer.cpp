@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <QRandomGenerator>
 #include <QColor>
+#include <QMessageBox>
 
 SortVisualizer::SortVisualizer() {
 
@@ -180,8 +181,12 @@ void SortVisualizer::stopSort() {
 
     rectangleColors.fill(DefaultFillColor);
 
-    update();
     emit enableButtons();
+    update();
+
+    //QMessageBox msgBox;
+    //msgBox.setText("Sorting stopped. Time elapsed: " + QString::number(elapsedTime) + " milliseconds");
+    //msgBox.exec();
 }
 
 void SortVisualizer::updateTimeElapsed() {
@@ -558,11 +563,11 @@ void SortVisualizer::mergeDecreasing(int left, int mid, int right) {
     // Copy data to temp arrays leftArray[] and rightArray[]
     for (auto i = 0; i < subArrayOne; i++) {
         leftArray[i] = sortArray[left + i];
-        stepsVector.append(std::make_tuple(HIGHLIGHT_ONE, left+i, left+i));
+        stepsVector.append(std::make_tuple(HIGHLIGHT_RANGE, left, left+i));
     }
     for (auto j = 0; j < subArrayTwo; j++) {
         rightArray[j] = sortArray[mid + 1 + j];
-        stepsVector.append(std::make_tuple(HIGHLIGHT_ONE, mid+1+j, mid+1+j));
+        stepsVector.append(std::make_tuple(HIGHLIGHT_RANGE, mid+1, mid+1+j));
     }
 
     auto indexOfSubArrayOne = 0, // Initial index of first sub-array
@@ -601,11 +606,17 @@ void SortVisualizer::mergeDecreasing(int left, int mid, int right) {
     }
 }
 
+bool checkLowHigh(int low, int high, int numElements) {
+    if (low >= numElements || low < 0 || high >= numElements || high < 0)
+        return false;
+    return true;
+}
 
 void SortVisualizer::quickSortIncreasing(int low, int high) {
-    if (low < numberOfElements && high < numberOfElements) {
-        stepsVector.append(std::make_tuple(HIGHLIGHT, (low < numberOfElements ? low : numberOfElements - 1), (high < numberOfElements ? high : numberOfElements - 1)));
+    if (checkLowHigh(low, high, numberOfElements)) {
+        stepsVector.append(std::make_tuple(HIGHLIGHT, low, high));
     }
+
     if (low < high)
     {
         /* pi is partitioning index, arr[p] is now
@@ -620,7 +631,21 @@ void SortVisualizer::quickSortIncreasing(int low, int high) {
 }
 
 void SortVisualizer::quickSortDecreasing(int low, int high) {
+    if (checkLowHigh(low, high, numberOfElements)) {
+        stepsVector.append(std::make_tuple(HIGHLIGHT, low, high));
+    }
 
+    if (low < high)
+    {
+        /* pi is partitioning index, arr[p] is now
+           at right place */
+        int pi = partitionDecreasing(low, high);
+
+        // Separately sort elements before
+        // partition and after partition
+        quickSortDecreasing(low, pi - 1);
+        quickSortDecreasing(pi + 1, high);
+    }
 }
 
 int SortVisualizer::partitionIncreasing(int low, int high) {
@@ -629,7 +654,7 @@ int SortVisualizer::partitionIncreasing(int low, int high) {
 
     //qDebug() << low << " " << high << " ASD";
 
-    if (low < numberOfElements && high < numberOfElements) {
+    if (checkLowHigh(low, high, numberOfElements)) {
         stepsVector.append(std::make_tuple(HIGHLIGHT, low, high));
     }
 
@@ -637,7 +662,7 @@ int SortVisualizer::partitionIncreasing(int low, int high) {
     {
         // If current element is smaller than or
         // equal to pivot
-        if (j < numberOfElements && high < numberOfElements) {
+        if (checkLowHigh(j, high, numberOfElements)) {
             stepsVector.append(std::make_tuple(HIGHLIGHT, j, high));
         }
         //stepsVector.append(std::make_tuple(HIGHLIGHT, j, high));
@@ -646,10 +671,9 @@ int SortVisualizer::partitionIncreasing(int low, int high) {
         {
             i++;    // increment index of smaller element
             qSwap(sortArray[i], sortArray[j]);
-            if (i < numberOfElements && j < numberOfElements) {
+            if (checkLowHigh(i, j, numberOfElements)) {
                 stepsVector.append(std::make_tuple(SWAP, i, j));
             }
-
             //qDebug() << i << " " << j << "ij";
         }
     }
@@ -663,5 +687,39 @@ int SortVisualizer::partitionIncreasing(int low, int high) {
 }
 
 int SortVisualizer::partitionDecreasing(int low, int high) {
+    int pivot = sortArray[high];    // pivot
+    int i = (low - 1);  // Index of smaller element
 
+    //qDebug() << low << " " << high << " ASD";
+
+    if (checkLowHigh(low, high, numberOfElements)) {
+        stepsVector.append(std::make_tuple(HIGHLIGHT, low, high));
+    }
+
+    for (int j = low; j <= high- 1; j++)
+    {
+        // If current element is smaller than or
+        // equal to pivot
+        if (checkLowHigh(j, high, numberOfElements)) {
+            stepsVector.append(std::make_tuple(HIGHLIGHT, j, high));
+        }
+        //stepsVector.append(std::make_tuple(HIGHLIGHT, j, high));
+
+        if (sortArray[j] >= pivot) //////////
+        {
+            i++;    // increment index of smaller element
+            qSwap(sortArray[i], sortArray[j]);
+            if (checkLowHigh(i, j, numberOfElements)) {
+                stepsVector.append(std::make_tuple(SWAP, i, j));
+            }
+            //qDebug() << i << " " << j << "ij";
+        }
+    }
+    qSwap(sortArray[i + 1], sortArray[high]);
+    if (i+1 < numberOfElements && high < numberOfElements) {
+        stepsVector.append(std::make_tuple(SWAP, i+1, high));
+    }
+    //stepsVector.append(std::make_tuple(SWAP, i+1, high));
+    //qDebug() << i+1 << " " << high << "swap";
+    return (i + 1);
 }
